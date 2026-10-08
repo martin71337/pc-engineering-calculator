@@ -81,6 +81,18 @@ class ParsingTests(unittest.TestCase):
         self.assertIn(r"\frac{2}{3}", tex)
         self.assertIn("1.49", tex)
 
+    def test_display_keeps_multiplied_fractions_separate(self):
+        cases = {
+            "y = a/b*c/d": r"y = \dfrac{a}{b} \cdot \dfrac{c}{d}",
+            "y = (a+b)/c*d/(e-f)": r"y = \dfrac{a + b}{c} \cdot \dfrac{d}{e - f}",
+            "y = M*c/I": r"y = \dfrac{M \cdot c}{I}",
+            "y = 2/3*x": r"y = \dfrac{2}{3} \cdot x",
+            "y = x^-2*y": r"y = \frac{1}{x^{2}} \cdot y",
+        }
+        for text, tex in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(engine.display_latex(text), tex)
+
     def test_input_text_round_trip(self):
         for f in engine.rearrange(parse_line("y = ln(x) + log(x)"), "x"):
             back = parse_line(engine.to_input_text(f))

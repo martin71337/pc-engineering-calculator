@@ -360,6 +360,70 @@ class _Latex(LatexPrinter):
         return super()._print_Symbol(expr, style)
 
 
+class _TypedLatex(_Latex):
+    """Draws products the way they were typed instead of merging them into one fraction.
+
+    A "/" divides only the factors since the previous fraction, so a/b*c/d shows as two
+    fractions side by side, 1.49/n*A as (1.49/n)*A, while M*c/I stays one fraction.
+    """
+
+    def _print_Mul(self, expr):
+        if not expr.is_Mul:  # LatexPrinter also routes negative powers (x^-2) through here
+            return super()._print_Mul(expr)
+        args = list(expr.args)
+        sign = ""
+        if args and args[0] == -1 and len(args) > 1:
+            sign, args = "-", args[1:]
+        segments: list[tuple[list, list]] = []
+        for a in args:
+            if a.is_Pow and a.exp == -1:
+                if not segments:
+                    segments.append(([], []))
+                segments[-1][1].append(a.base)
+            elif not segments or segments[-1][1]:
+                segments.append(([a], []))  # a factor after a division starts a new term
+            else:
+                segments[-1][0].append(a)
+        # Full-size fractions on the main line; normal (small) ones inside powers.
+        frac = r"\frac" if getattr(self, "_pow_depth", 0) else r"\dfrac"
+        parts = []
+        for nums, dens in segments:
+            num = self._factors(nums, first=not parts) or "1"
+            parts.append(frac + r"{%s}{%s}" % (num, self._factors(dens, first=True)) if dens else num)
+        return sign + r" \cdot ".join(parts)
+
+    def _in_power(self, method, expr):
+        self._pow_depth = getattr(self, "_pow_depth", 0) + 1
+        try:
+            return method(expr)
+        finally:
+            self._pow_depth -= 1
+
+    def _print_Pow(self, expr):
+        return self._in_power(super()._print_Pow, expr)
+
+    def _print_ExpBase(self, expr, exp=None):
+        tex = self._in_power(super()._print_ExpBase, expr)
+        return tex if exp is None else r"%s^{%s}" % (tex, exp)
+
+    def _print_Rational(self, expr):
+        tex = super()._print_Rational(expr)
+        if not getattr(self, "_pow_depth", 0):
+            tex = tex.replace(r"\frac", r"\dfrac", 1)
+        return tex
+
+    def _factors(self, factors, first=True):
+        if len(factors) == 1 and not (factors[0].is_Number and factors[0].is_negative and not first):
+            return self._print(factors[0])
+        out = []
+        for i, f in enumerate(factors):
+            tex = self._print(f)
+            if f.is_Add or (f.is_Number and f.is_negative and (i or not first)):
+                tex = r"\left(%s\right)" % tex
+            out.append(tex)
+        return r" \cdot ".join(out)
+
+
 _DERIV_NAME = re.compile(r"^d([A-Za-z][A-Za-z0-9]*)_d([A-Za-z][A-Za-z0-9]*)$")
 _TRIG_FUNCS = (sp.sin, sp.cos, sp.tan, sp.sec, sp.csc, sp.cot)
 _ATRIG_FUNCS = (sp.asin, sp.acos, sp.atan, sp.atan2)
@@ -406,7 +470,7 @@ def display_latex(text: str, symbol_latex: dict[str, str] | None = None) -> str:
             rep = {s: sp.Symbol(symbol_latex[s.name]) for s in side.free_symbols
                    if s.name in symbol_latex}
             side = side.xreplace(rep)
-        out.append(to_latex(side, order="none", mul_symbol="dot"))
+        out.append(_TypedLatex({"order": "none", "mul_symbol": "dot"}).doprint(side))
     return " = ".join(out)
 
 
