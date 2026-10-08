@@ -45,12 +45,11 @@ py -3.14 tools/build.py
 - The iterative solver scans for **every real root**. If there are several, the others are
   listed with **Use** buttons. **Guess / Min / Max** control which root you get.
 - Lines without `=` are evaluated after solving, which is useful for checks (`Q/A`).
-- **Plot…** graphs both sides of the current line against a variable, with intersections marked.
-- **Rearrange…** isolates any variable symbolically. **Simplify / Expand / Factor / d/dx / ∫ dx**
-  work on the line the cursor is on. Results can be inserted back into the worksheet.
+- **Plot…** graphs both sides of the current line against a variable.
+- **Rearrange…**, **Simplify**, **Expand**, **Factor**, **d/dx** and **∫ dx** work on the line the cursor is on.
 - **Results → Values** copies answers into the Value column for the next calculation.
-- **File → Save** writes a `.pcalc` worksheet (equations, values, units, settings).
-- **Library** (Ctrl+L) holds reusable formulas. A few examples are included, and you can save your own.
+- **File → Save** writes a `.pcalc` worksheet.
+- **Library** (Ctrl+L) holds reusable formulas.
 
 ### Scratchpad: quick calculations
 Line-by-line calculator with variables and units:
@@ -102,18 +101,3 @@ In US and SI, temperatures are converted to absolute scales (°R / K) before sol
 
 Extra units defined here: `cfs gpm gpd mgd psf ksf pcf kcf plf klf acre_ft`
 (`pcf` is a unit *weight*, lbf/ft³).
-
-## Files
-
-```
-run_calculator.pyw        entry point
-pc_calculator.spec        PyInstaller recipe (tools/build.py builds dist/PC-Calculator-Windows.zip)
-tools/make_icon.py        draws calculator/assets/calculator.ico
-calculator/engine.py      parsing, symbolic algebra, numeric solvers (sympy + scipy)
-calculator/units.py       unit handling (pint)
-calculator/scratch.py     scratchpad evaluator
-calculator/render.py      typeset math (matplotlib mathtext)
-calculator/storage.py     settings / library / worksheet files (%APPDATA%\PCCalculator)
-calculator/gui/           Tkinter interface
-tests/test_engine.py      py -3.14 -m unittest discover tests
-```
