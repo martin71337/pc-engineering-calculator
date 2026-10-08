@@ -1,0 +1,7 @@
+# Python
+__pycache__/
+*.pyc
+
+# PyInstaller output (shared via GitHub Releases instead)
+build/
+dist/
